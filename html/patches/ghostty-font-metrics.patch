@@ -1,0 +1,26 @@
+diff --git a/lib/renderer.ts b/lib/renderer.ts
+index 3b51bfd..a23e415 100644
+--- a/lib/renderer.ts
++++ b/lib/renderer.ts
+@@ -197,16 +197,16 @@ export class CanvasRenderer {
+ 
+     // Measure width using 'M' (typically widest character)
+     const widthMetrics = ctx.measureText('M');
+-    const width = Math.ceil(widthMetrics.width);
++    // Keep fractional advances so fixed-width cells match the native font metrics.
++    const width = widthMetrics.width;
+ 
+     // Measure height using ascent + descent with padding for glyph overflow
+     const ascent = widthMetrics.actualBoundingBoxAscent || this.fontSize * 0.8;
+     const descent = widthMetrics.actualBoundingBoxDescent || this.fontSize * 0.2;
+ 
+-    // Add 2px padding to height to account for glyphs that overflow (like 'f', 'd', 'g', 'p')
+-    // and anti-aliasing pixels
+-    const height = Math.ceil(ascent + descent) + 2;
+-    const baseline = Math.ceil(ascent) + 1; // Offset baseline by half the padding
++    // Preserve room for glyph overhang and add balanced leading between rows.
++    const height = Math.ceil(ascent + descent) + 4;
++    const baseline = Math.ceil(ascent) + 2; // Center glyphs in the added vertical leading
+ 
+     return { width, height, baseline };
+   }

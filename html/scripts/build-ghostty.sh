@@ -13,6 +13,7 @@ command -v zig >/dev/null
 git clone https://github.com/coder/ghostty-web.git "$work_dir/ghostty-web"
 cd "$work_dir/ghostty-web"
 git checkout --detach "$revision"
+git apply "$html_dir/patches/ghostty-font-metrics.patch"
 git submodule update --init --recursive
 bun install --frozen-lockfile
 bun run build:wasm
