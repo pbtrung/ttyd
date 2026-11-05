@@ -23,7 +23,7 @@ Fully-featured terminal based on Xterm.js with CJK (Chinese, Japanese, Korean) a
 .IP \(bu 2
 Graphical ZMODEM integration with lrzsz support
 .IP \(bu 2
-Sixel image output support
+Ghostty WebAssembly terminal, JetBrains Mono font and Dracula colors
 .IP \(bu 2
 SSL support based on OpenSSL
 .IP \(bu 2
@@ -174,7 +174,7 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 .SH Basic usage
 .RS
 .IP \(bu 2
-\fB\fC-t rendererType=canvas\fR: use the \fB\fCcanvas\fR renderer for xterm.js (default: \fB\fCwebgl\fR)
+\fB\fCrendererType\fR: accepted for compatibility; Ghostty always uses its built-in canvas renderer
 .IP \(bu 2
 \fB\fC-t disableLeaveAlert=true\fR: disable the leave page alert
 .IP \(bu 2
@@ -189,9 +189,7 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 \fB\fC-t enableTrzsz=true\fR: enable trzsz
 \[la]https://trzsz.github.io\[ra] file transfer support
 .IP \(bu 2
-\fB\fC-t enableSixel=true\fR: enable Sixel
-\[la]https://en.wikipedia.org/wiki/Sixel\[ra] image output support (Usage
-\[la]https://saitoha.github.io/libsixel/\[ra])
+\fB\fCenableSixel\fR: Sixel images are unsupported by ghostty-web
 .IP \(bu 2
 \fB\fC-t closeOnDisconnect=true\fR: close the terminal on disconnection, this will disable reconnect
 .IP \(bu 2
@@ -199,7 +197,7 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 .IP \(bu 2
 \fB\fC-t fontSize=20\fR: change the font size of the terminal
 .IP \(bu 2
-\fB\fC-t unicodeVersion=11\fR: set xterm unicode support level (default: 11, use 6 to disable unicode addon)
+\fB\fCunicodeVersion\fR: accepted for compatibility; Unicode handling is provided by Ghostty
 .IP \(bu 2
 \fB\fC-t trzszDragInitTimeout=3000\fR: set the timeout in milliseconds for initializing drag and drop files to upload. (default: 3000)
 
@@ -207,14 +205,15 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 
 .SH Advanced usage
 .PP
-You can use the client option to change all the settings of xterm defined in ITerminalOptions
-\[la]https://xtermjs.org/docs/api/terminal/interfaces/iterminaloptions/\[ra], examples:
+Dracula colors and bundled JetBrains Mono apply to Bash and Zsh sessions by default.
+You can use client options to change settings supported by ghostty-web
+\[la]https://github.com/coder/ghostty-web/blob/main/lib/interfaces.ts\[ra], examples:
 
 .RS
 .IP \(bu 2
 \fB\fC-t cursorStyle=bar\fR: set cursor style to \fB\fCbar\fR
 .IP \(bu 2
-\fB\fC-t lineHeight=1.5\fR: set line-height to \fB\fC1.5\fR
+\fB\fC-t fontSize=16\fR: set font size to \fB\fC16\fR
 .IP \(bu 2
 \fB\fC-t 'theme={"background": "green"}'\fR: set background color to \fB\fCgreen\fR
 
@@ -227,7 +226,7 @@ to try the example options above, run:
 .RS
 
 .nf
-ttyd -t cursorStyle=bar -t lineHeight=1.5 -t 'theme={"background": "green"}' bash
+ttyd -t cursorStyle=bar -t fontSize=16 -t 'theme={"background": "green"}' bash
 
 .fi
 .RE

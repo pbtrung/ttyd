@@ -1258,78 +1258,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xterm/addon-canvas@npm:^0.7.0":
-  version: 0.7.0
-  resolution: "@xterm/addon-canvas@npm:0.7.0"
-  peerDependencies:
-    "@xterm/xterm": ^5.0.0
-  checksum: 28b9965f34e01a9bbcc31651dee2d4a9380aad528039484cce372b856be820705b293c4b5091cee65208c3dfbf6f944f27ecc6c3b794df5a96036cbf6dba0d74
-  languageName: node
-  linkType: hard
-
-"@xterm/addon-clipboard@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@xterm/addon-clipboard@npm:0.1.0"
-  dependencies:
-    js-base64: ^3.7.5
-  peerDependencies:
-    "@xterm/xterm": ^5.4.0
-  checksum: fe33d28223ae7f9965653c6c946a68e06f1d884fba1d11e8bcb52dcc608dbb2240caf48573d6297daefa56696e88f963148a1035ccf034cb6fb4f88f506a2ec7
-  languageName: node
-  linkType: hard
-
-"@xterm/addon-fit@npm:^0.10.0":
-  version: 0.10.0
-  resolution: "@xterm/addon-fit@npm:0.10.0"
-  peerDependencies:
-    "@xterm/xterm": ^5.0.0
-  checksum: 8edfad561c0d0316c5883cbe2ce56109f105a2b2bf53b71d5f8c788e656a3205c1093a659dddcf4025a459e4b7ff8e07b6c6a19815c8711deeded560de5f1893
-  languageName: node
-  linkType: hard
-
-"@xterm/addon-image@npm:^0.8.0":
-  version: 0.8.0
-  resolution: "@xterm/addon-image@npm:0.8.0"
-  peerDependencies:
-    "@xterm/xterm": ^5.2.0
-  checksum: 852ea4482e0272bf74a505a9b54429a7d60775f0ee0b86bf207b5ea52a8f2e83ce2870415129fca82710a63a7ca3e233564d5dd050ebc49512d1d0113e5b5b1b
-  languageName: node
-  linkType: hard
-
-"@xterm/addon-unicode11@npm:^0.8.0":
-  version: 0.8.0
-  resolution: "@xterm/addon-unicode11@npm:0.8.0"
-  peerDependencies:
-    "@xterm/xterm": ^5.0.0
-  checksum: 187df1098b170af9c519fceb0681655e54e571d54538e5271b54b801dd30f8710b1c4a5ff9629f3d2a0ae9a59b4da563be99a4d2a0a163a1728cf245773c741c
-  languageName: node
-  linkType: hard
-
-"@xterm/addon-web-links@npm:^0.11.0":
-  version: 0.11.0
-  resolution: "@xterm/addon-web-links@npm:0.11.0"
-  peerDependencies:
-    "@xterm/xterm": ^5.0.0
-  checksum: c1b36b649b8cddc613213eb9e835daf3106a8be359a19ccacca1f1d9ff883b59d478f166109ee017fa3994d224dcdd82976ad5d5a1221271ab8d3d5684eb141d
-  languageName: node
-  linkType: hard
-
-"@xterm/addon-webgl@npm:^0.18.0":
-  version: 0.18.0
-  resolution: "@xterm/addon-webgl@npm:0.18.0"
-  peerDependencies:
-    "@xterm/xterm": ^5.0.0
-  checksum: 942ecaa4e08423563a795a1a63fa79637e60d4e3aba1b5fa2f426e1d7b19c553e8c8f1cfad1258461f22e05362e791f642dc6aab7e8766e26d4d3876617d8320
-  languageName: node
-  linkType: hard
-
-"@xterm/xterm@npm:^5.5.0":
-  version: 5.5.0
-  resolution: "@xterm/xterm@npm:5.5.0"
-  checksum: 393c1891b95fdd50d05e7a063abdc95a6643d2c45a4231637c23db90511426a95b1b56a5c4c91831121d2710aee9de97cf5e426016c589ca87dea8fff9a41b33
-  languageName: node
-  linkType: hard
-
 "@xtuc/ieee754@npm:^1.2.0":
   version: 1.2.0
   resolution: "@xtuc/ieee754@npm:1.2.0"
@@ -4935,6 +4863,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ghostty-web@file:vendor/ghostty-web::locator=ttyd%40workspace%3A.":
+  version: 0.4.0-ttyd.640db461
+  resolution: "ghostty-web@file:vendor/ghostty-web#vendor/ghostty-web::hash=05b4fd&locator=ttyd%40workspace%3A."
+  checksum: d78083a0439edb9eb16d5a67f87102c2dcf894d40bf6d733368e44302d8f824897e18f3d60820f19907e98f4330789706283987a46c2fcd84d599abb2e363ed2
+  languageName: node
+  linkType: hard
+
 "glob-parent@npm:^3.1.0":
   version: 3.1.0
   resolution: "glob-parent@npm:3.1.0"
@@ -6439,13 +6374,6 @@ __metadata:
     merge-stream: ^2.0.0
     supports-color: ^8.0.0
   checksum: 30fff60af49675273644d408b650fc2eb4b5dcafc5a0a455f238322a8f9d8a98d847baca9d51ff197b6747f54c7901daa2287799230b856a0f48287d131f8c13
-  languageName: node
-  linkType: hard
-
-"js-base64@npm:^3.7.5":
-  version: 3.7.7
-  resolution: "js-base64@npm:3.7.7"
-  checksum: d1b02971db9dc0fd35baecfaf6ba499731fb44fe3373e7e1d6681fbd3ba665f29e8d9d17910254ef8104e2cb8b44117fe4202d3dc54c7cafe9ba300fe5433358
   languageName: node
   linkType: hard
 
@@ -10492,14 +10420,6 @@ __metadata:
   resolution: "ttyd@workspace:."
   dependencies:
     "@typescript-eslint/eslint-plugin": ^7.1.1
-    "@xterm/addon-canvas": ^0.7.0
-    "@xterm/addon-clipboard": ^0.1.0
-    "@xterm/addon-fit": ^0.10.0
-    "@xterm/addon-image": ^0.8.0
-    "@xterm/addon-unicode11": ^0.8.0
-    "@xterm/addon-web-links": ^0.11.0
-    "@xterm/addon-webgl": ^0.18.0
-    "@xterm/xterm": ^5.5.0
     copy-webpack-plugin: ^12.0.2
     css-loader: ^6.10.0
     css-minimizer-webpack-plugin: ^6.0.0
@@ -10509,6 +10429,7 @@ __metadata:
     eslint-plugin-prettier: ^5.1.3
     eslint-webpack-plugin: ^4.0.1
     file-saver: ^2.0.5
+    ghostty-web: "file:vendor/ghostty-web"
     gts: ^5.2.0
     gulp: ^4.0.2
     gulp-clean: ^0.4.0

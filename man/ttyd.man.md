@@ -13,7 +13,7 @@ ttyd 1 "September 2016" ttyd "User Manual"
   - Built on top of Libwebsockets with libuv for speed
   - Fully-featured terminal based on Xterm.js with CJK (Chinese, Japanese, Korean) and IME support
   - Graphical ZMODEM integration with lrzsz support
-  - Sixel image output support
+  - Ghostty WebAssembly terminal, JetBrains Mono font and Dracula colors
   - SSL support based on OpenSSL
   - Run any custom command with options
   - Basic authentication support and many other custom options
@@ -119,31 +119,32 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 
 ## Basic usage
 
-- `-t rendererType=canvas`: use the `canvas` renderer for xterm.js (default: `webgl`)
+- `rendererType`: accepted for compatibility; Ghostty always uses its built-in canvas renderer
 - `-t disableLeaveAlert=true`: disable the leave page alert
 - `-t disableResizeOverlay=true`: disable the terminal resize overlay
 - `-t disableReconnect=true`: prevent the terminal from reconnecting on connection error/close
 - `-t enableZmodem=true`: enable [ZMODEM](https://en.wikipedia.org/wiki/ZMODEM) / [lrzsz](https://ohse.de/uwe/software/lrzsz.html) file transfer support
 - `-t enableTrzsz=true`: enable [trzsz](https://trzsz.github.io) file transfer support
-- `-t enableSixel=true`: enable [Sixel](https://en.wikipedia.org/wiki/Sixel) image output support ([Usage](https://saitoha.github.io/libsixel/))
+- `enableSixel`: Sixel images are unsupported by ghostty-web
 - `-t closeOnDisconnect=true`: close the terminal on disconnection, this will disable reconnect
 - `-t titleFixed=hello`: set a fixed title for the browser window
 - `-t fontSize=20`: change the font size of the terminal
-- `-t unicodeVersion=11`: set xterm unicode support level (default: 11, use 6 to disable unicode addon)
+- `unicodeVersion`: accepted for compatibility; Unicode handling is provided by Ghostty
 - `-t trzszDragInitTimeout=3000`: set the timeout in milliseconds for initializing drag and drop files to upload. (default: 3000) 
 
 ## Advanced usage
 
-You can use the client option to change all the settings of xterm defined in [ITerminalOptions](https://xtermjs.org/docs/api/terminal/interfaces/iterminaloptions/), examples:
+Dracula colors and bundled JetBrains Mono apply to Bash and Zsh sessions by default.
+You can use client options to change settings supported by [ghostty-web](https://github.com/coder/ghostty-web/blob/main/lib/interfaces.ts), examples:
 
 - `-t cursorStyle=bar`: set cursor style to `bar`
-- `-t lineHeight=1.5`: set line-height to `1.5`
+- `-t fontSize=16`: set font size to `16`
 - `-t 'theme={"background": "green"}'`: set background color to `green`
 
 to try the example options above, run:
 
 ```bash
-ttyd -t cursorStyle=bar -t lineHeight=1.5 -t 'theme={"background": "green"}' bash
+ttyd -t cursorStyle=bar -t fontSize=16 -t 'theme={"background": "green"}' bash
 ```
 
 # EXAMPLES

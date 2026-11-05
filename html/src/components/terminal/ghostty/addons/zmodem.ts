@@ -1,6 +1,6 @@
 import { bind } from 'decko';
 import { saveAs } from 'file-saver';
-import { IDisposable, ITerminalAddon, Terminal } from '@xterm/xterm';
+import { IDisposable, ITerminalAddon, Terminal } from 'ghostty-web';
 import * as Zmodem from 'zmodem.js/src/zmodem_browser';
 import { TrzszFilter } from 'trzsz';
 

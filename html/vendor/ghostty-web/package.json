@@ -1,0 +1,15 @@
+{
+  "name": "ghostty-web",
+  "version": "0.4.0-ttyd.640db461",
+  "type": "module",
+  "main": "./ghostty-web.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./ghostty-web.js"
+    },
+    "./ghostty-vt.wasm": "./ghostty-vt.wasm"
+  },
+  "license": "MIT"
+}

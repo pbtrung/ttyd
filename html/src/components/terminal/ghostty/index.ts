@@ -1,20 +1,16 @@
 import { bind } from 'decko';
-import type { IDisposable, ITerminalOptions } from '@xterm/xterm';
-import { Terminal } from '@xterm/xterm';
-import { CanvasAddon } from '@xterm/addon-canvas';
-import { ClipboardAddon } from '@xterm/addon-clipboard';
-import { WebglAddon } from '@xterm/addon-webgl';
-import { FitAddon } from '@xterm/addon-fit';
-import { WebLinksAddon } from '@xterm/addon-web-links';
-import { ImageAddon } from '@xterm/addon-image';
-import { Unicode11Addon } from '@xterm/addon-unicode11';
+import type { IDisposable, ITerminalOptions } from 'ghostty-web';
+import { init, Terminal, FitAddon } from 'ghostty-web';
 import { OverlayAddon } from './addons/overlay';
 import { ZmodemAddon } from './addons/zmodem';
 
-import '@xterm/xterm/css/xterm.css';
+class TtydTerminal extends Terminal {
+    public fit: () => void;
 
-interface TtydTerminal extends Terminal {
-    fit(): void;
+    public focus() {
+        // beforeinput (including mobile and IME text) is handled on the textarea.
+        (this.textarea ?? this.element)?.focus();
+    }
 }
 
 declare global {
@@ -59,7 +55,7 @@ export interface FlowControl {
     lowWater: number;
 }
 
-export interface XtermOptions {
+export interface GhosttyOptions {
     wsUrl: string;
     tokenUrl: string;
     flowControl: FlowControl;
@@ -76,20 +72,19 @@ function addEventListener(target: EventTarget, type: string, listener: EventList
     return toDisposable(() => target.removeEventListener(type, listener));
 }
 
-export class Xterm {
+export class GhosttyTerminal {
     private disposables: IDisposable[] = [];
     private textEncoder = new TextEncoder();
     private textDecoder = new TextDecoder();
     private written = 0;
     private pending = 0;
+    private outputDecoder = new TextDecoder();
+    private titleBuffer = '';
+    private destroyed = false;
 
     private terminal: Terminal;
     private fitAddon = new FitAddon();
     private overlayAddon = new OverlayAddon();
-    private clipboardAddon = new ClipboardAddon();
-    private webLinksAddon = new WebLinksAddon();
-    private webglAddon?: WebglAddon;
-    private canvasAddon?: CanvasAddon;
     private zmodemAddon?: ZmodemAddon;
 
     private socket?: WebSocket;
@@ -105,7 +100,7 @@ export class Xterm {
     private writeFunc = (data: ArrayBuffer) => this.writeData(new Uint8Array(data));
 
     constructor(
-        private options: XtermOptions,
+        private options: GhosttyOptions,
         private sendCb: () => void
     ) {}
 
@@ -114,6 +109,14 @@ export class Xterm {
             d.dispose();
         }
         this.disposables.length = 0;
+    }
+
+    public destroy() {
+        this.destroyed = true;
+        this.doReconnect = false;
+        this.dispose();
+        this.socket?.close();
+        this.terminal?.dispose();
     }
 
     @bind
@@ -152,9 +155,23 @@ export class Xterm {
     }
 
     @bind
-    public open(parent: HTMLElement) {
-        this.terminal = new Terminal(this.options.termOptions);
-        const { terminal, fitAddon, overlayAddon, clipboardAddon, webLinksAddon } = this;
+    public async open(parent: HTMLElement) {
+        await Promise.all([
+            init(),
+            document.fonts.load('13px "JetBrains Mono"'),
+            document.fonts.load('bold 13px "JetBrains Mono"'),
+            document.fonts.load('italic 13px "JetBrains Mono"'),
+            document.fonts.load('italic bold 13px "JetBrains Mono"'),
+        ]);
+        if (this.destroyed) return;
+        this.mount(parent, this.options.termOptions);
+    }
+
+    private mount(parent: HTMLElement, options: ITerminalOptions) {
+        this.fitAddon = new FitAddon();
+        this.overlayAddon = new OverlayAddon();
+        this.terminal = new TtydTerminal(options);
+        const { terminal, fitAddon, overlayAddon } = this;
         window.term = terminal as TtydTerminal;
         window.term.fit = () => {
             this.fitAddon.fit();
@@ -162,8 +179,6 @@ export class Xterm {
 
         terminal.loadAddon(fitAddon);
         terminal.loadAddon(overlayAddon);
-        terminal.loadAddon(clipboardAddon);
-        terminal.loadAddon(webLinksAddon);
 
         terminal.open(parent);
         fitAddon.fit();
@@ -172,15 +187,8 @@ export class Xterm {
     @bind
     private initListeners() {
         const { terminal, fitAddon, overlayAddon, register, sendData } = this;
-        register(
-            terminal.onTitleChange(data => {
-                if (data && data !== '' && !this.titleFixed) {
-                    document.title = data + ' | ' + this.title;
-                }
-            })
-        );
+        register(terminal.onTitleChange(this.updateTitle));
         register(terminal.onData(data => sendData(data)));
-        register(terminal.onBinary(data => sendData(Uint8Array.from(data, v => v.charCodeAt(0)))));
         register(
             terminal.onResize(({ cols, rows }) => {
                 const msg = JSON.stringify({ columns: cols, rows: rows });
@@ -192,7 +200,7 @@ export class Xterm {
             terminal.onSelectionChange(() => {
                 if (this.terminal.getSelection() === '') return;
                 try {
-                    document.execCommand('copy');
+                    this.terminal.copySelection();
                 } catch (e) {
                     return;
                 }
@@ -208,6 +216,9 @@ export class Xterm {
         const { terminal, textEncoder } = this;
         const { limit, highWater, lowWater } = this.options.flowControl;
 
+        // Ghostty's JS title event only handles complete string writes. PTY output
+        // arrives as bytes and may split an OSC title across WebSocket messages.
+        this.trackTitle(typeof data === 'string' ? data : this.outputDecoder.decode(data, { stream: true }));
         this.written += data.length;
         if (this.written > limit) {
             terminal.write(data, () => {
@@ -246,6 +257,7 @@ export class Xterm {
 
     @bind
     public connect() {
+        if (this.destroyed) return;
         this.socket = new WebSocket(this.options.wsUrl, ['tty']);
         const { socket, register } = this;
 
@@ -273,7 +285,10 @@ export class Xterm {
         }
 
         this.doReconnect = this.reconnect;
-        this.initListeners();
+        this.outputDecoder = new TextDecoder();
+        this.titleBuffer = '';
+        this.written = 0;
+        this.pending = 0;
         terminal.focus();
     }
 
@@ -284,6 +299,8 @@ export class Xterm {
         const { refreshToken, connect, doReconnect, overlayAddon } = this;
         overlayAddon.showOverlay('Connection Closed');
         this.dispose();
+        this.zmodemAddon = undefined;
+        this.writeFunc = data => this.writeData(new Uint8Array(data));
 
         // 1000: CLOSE_NORMAL
         if (event.code !== 1000 && doReconnect) {
@@ -355,7 +372,9 @@ export class Xterm {
                 document.title = this.title;
                 break;
             case Command.SET_PREFERENCES:
-                this.applyPreferences({
+                // ttyd sends preferences before any PTY output. Recreate the terminal
+                // now so Ghostty receives theme and scrollback at construction time.
+                this.configure({
                     ...this.options.clientOptions,
                     ...JSON.parse(textDecoder.decode(data)),
                     ...this.parseOptsFromUrlQuery(window.location.search),
@@ -365,6 +384,56 @@ export class Xterm {
                 console.warn(`[ttyd] unknown command: ${cmd}`);
                 break;
         }
+    }
+
+    @bind
+    private updateTitle(data: string) {
+        if (data && !this.titleFixed) document.title = data + ' | ' + this.title;
+    }
+
+    private trackTitle(data: string) {
+        this.titleBuffer += data;
+        while (this.titleBuffer) {
+            const start = this.titleBuffer.indexOf('\x1b]');
+            if (start < 0) {
+                this.titleBuffer = this.titleBuffer.endsWith('\x1b') ? '\x1b' : '';
+                return;
+            }
+            this.titleBuffer = this.titleBuffer.slice(start);
+            // OSC terminates with BEL or ST (ESC followed by a backslash).
+            // eslint-disable-next-line no-control-regex
+            const end = /\x07|\x1b\\/.exec(this.titleBuffer);
+            if (!end) {
+                // Bound memory for malformed or unterminated OSC sequences.
+                if (this.titleBuffer.length > 8192) this.titleBuffer = '';
+                return;
+            }
+            const sequence = this.titleBuffer.slice(2, end.index);
+            if (/^[02];/.test(sequence)) this.updateTitle(sequence.slice(2));
+            this.titleBuffer = this.titleBuffer.slice(end.index + end[0].length);
+        }
+    }
+
+    private configure(prefs: Preferences) {
+        const previous = this.terminal;
+        const parent = previous.element as HTMLElement;
+        const options = {
+            ...previous.options,
+            ...prefs,
+            theme: { ...previous.options.theme, ...prefs.theme },
+            cols: previous.cols,
+            rows: previous.rows,
+        };
+        previous.dispose();
+        this.mount(parent, options);
+        this.initListeners();
+        this.applyPreferences(prefs);
+        this.socket?.send(
+            this.textEncoder.encode(
+                Command.RESIZE_TERMINAL + JSON.stringify({ columns: this.terminal.cols, rows: this.terminal.rows })
+            )
+        );
+        this.terminal.focus();
     }
 
     @bind
@@ -387,7 +456,7 @@ export class Xterm {
         for (const [key, value] of Object.entries(prefs)) {
             switch (key) {
                 case 'rendererType':
-                    this.setRendererType(value);
+                    console.log('[ttyd] ghostty-web uses its built-in canvas renderer');
                     break;
                 case 'disableLeaveAlert':
                     if (value) {
@@ -418,10 +487,7 @@ export class Xterm {
                     if (value) console.log(`[ttyd] trzsz drag init timeout: ${value}`);
                     break;
                 case 'enableSixel':
-                    if (value) {
-                        terminal.loadAddon(register(new ImageAddon()));
-                        console.log('[ttyd] Sixel enabled');
-                    }
+                    if (value) console.warn('[ttyd] ghostty-web does not support Sixel images');
                     break;
                 case 'closeOnDisconnect':
                     if (value) {
@@ -440,20 +506,12 @@ export class Xterm {
                 case 'isWindows':
                     if (value) console.log('[ttyd] is windows');
                     break;
+                case 'theme':
+                case 'scrollback':
+                    // Applied when configuring the terminal before the first output.
+                    break;
                 case 'unicodeVersion':
-                    switch (value) {
-                        case 6:
-                        case '6':
-                            console.log('[ttyd] setting Unicode version: 6');
-                            break;
-                        case 11:
-                        case '11':
-                        default:
-                            console.log('[ttyd] setting Unicode version: 11');
-                            terminal.loadAddon(new Unicode11Addon());
-                            terminal.unicode.activeVersion = '11';
-                            break;
-                    }
+                    console.log('[ttyd] Unicode support is provided by Ghostty');
                     break;
                 default:
                     console.log(`[ttyd] option: ${key}=${JSON.stringify(value)}`);
@@ -465,71 +523,6 @@ export class Xterm {
                     if (key.indexOf('font') === 0) fitAddon.fit();
                     break;
             }
-        }
-    }
-
-    @bind
-    private setRendererType(value: RendererType) {
-        const { terminal } = this;
-        const disposeCanvasRenderer = () => {
-            try {
-                this.canvasAddon?.dispose();
-            } catch {
-                // ignore
-            }
-            this.canvasAddon = undefined;
-        };
-        const disposeWebglRenderer = () => {
-            try {
-                this.webglAddon?.dispose();
-            } catch {
-                // ignore
-            }
-            this.webglAddon = undefined;
-        };
-        const enableCanvasRenderer = () => {
-            if (this.canvasAddon) return;
-            this.canvasAddon = new CanvasAddon();
-            disposeWebglRenderer();
-            try {
-                this.terminal.loadAddon(this.canvasAddon);
-                console.log('[ttyd] canvas renderer loaded');
-            } catch (e) {
-                console.log('[ttyd] canvas renderer could not be loaded, falling back to dom renderer', e);
-                disposeCanvasRenderer();
-            }
-        };
-        const enableWebglRenderer = () => {
-            if (this.webglAddon) return;
-            this.webglAddon = new WebglAddon();
-            disposeCanvasRenderer();
-            try {
-                this.webglAddon.onContextLoss(() => {
-                    this.webglAddon?.dispose();
-                });
-                terminal.loadAddon(this.webglAddon);
-                console.log('[ttyd] WebGL renderer loaded');
-            } catch (e) {
-                console.log('[ttyd] WebGL renderer could not be loaded, falling back to canvas renderer', e);
-                disposeWebglRenderer();
-                enableCanvasRenderer();
-            }
-        };
-
-        switch (value) {
-            case 'canvas':
-                enableCanvasRenderer();
-                break;
-            case 'webgl':
-                enableWebglRenderer();
-                break;
-            case 'dom':
-                disposeWebglRenderer();
-                disposeCanvasRenderer();
-                console.log('[ttyd] dom renderer loaded');
-                break;
-            default:
-                break;
         }
     }
 }

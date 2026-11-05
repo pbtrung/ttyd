@@ -1,49 +1,72 @@
-![backend](https://github.com/tsl0922/ttyd/workflows/backend/badge.svg)
-![frontend](https://github.com/tsl0922/ttyd/workflows/frontend/badge.svg)
-[![GitHub Releases](https://img.shields.io/github/downloads/tsl0922/ttyd/total)](https://github.com/tsl0922/ttyd/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/tsl0922/ttyd)](https://hub.docker.com/r/tsl0922/ttyd)
-[![Packaging status](https://repology.org/badge/tiny-repos/ttyd.svg)](https://repology.org/project/ttyd/versions)
-![GitHub](https://img.shields.io/github/license/tsl0922/ttyd)
-
 # ttyd - Share your terminal over the web
 
-ttyd is a simple command-line tool for sharing terminal over the web.
-
-![screenshot](https://github.com/tsl0922/ttyd/raw/main/screenshot.gif)
+ttyd shares a terminal in your browser. This version uses Ghostty's terminal
+emulator compiled to WebAssembly, with JetBrains Mono and Dracula colors.
 
 # Features
 
-- Built on top of [libuv](https://libuv.org) and [WebGL2](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API) for speed
-- Fully-featured terminal with [CJK](https://en.wikipedia.org/wiki/CJK_characters) and IME support
-- [ZMODEM](https://en.wikipedia.org/wiki/ZMODEM) ([lrzsz](https://ohse.de/uwe/software/lrzsz.html)) / [trzsz](https://trzsz.github.io) file transfer support
-- [Sixel](https://en.wikipedia.org/wiki/Sixel) image output support ([img2sixel](https://saitoha.github.io/libsixel) / [lsix](https://github.com/hackerb9/lsix))
-- SSL support based on [OpenSSL](https://www.openssl.org) / [Mbed TLS](https://github.com/Mbed-TLS/mbedtls)
-- Run any custom command with options
-- Basic authentication support and many other custom options
-- Cross platform: macOS, Linux, FreeBSD/OpenBSD, [OpenWrt](https://openwrt.org), Windows
+- [ghostty-web](https://github.com/coder/ghostty-web) terminal with a canvas renderer and Ghostty's VT parser, built from Git.
+- Bundled JetBrains Mono 2.304, the latest official release, in regular, bold, italic and bold italic.
+- Dracula terminal colors for Bash and Zsh, with configurable fonts, cursor and colors.
+- Self-contained embedded frontend: JavaScript, WebAssembly and fonts work without a CDN.
+- Responsive terminal sizing, Unicode text, selection, clipboard copy/paste and clickable links.
+- ZMODEM and trzsz file transfers, including drag and drop with trzsz.
+- libuv and WebSocket backend with TLS, basic authentication and reverse proxy support.
+- Run Bash, Zsh or another command with arguments; enable browser input with `-W`.
 
 # Installation
 
-## Install on macOS
+## Compile on Linux
 
-- Install with [Homebrew](http://brew.sh): `brew install ttyd`
-- Install with [MacPorts](https://www.macports.org): `sudo port install ttyd`
+Install a C compiler, CMake, Git and development libraries for libuv, libwebsockets,
+JSON-C, zlib and OpenSSL. libwebsockets must include libuv event loop support.
+On Debian/Ubuntu:
 
-## Install on Linux
+```sh
+sudo apt update
+sudo apt install build-essential cmake git libuv1-dev libwebsockets-dev \
+  libwebsockets-evlib-uv libjson-c-dev zlib1g-dev libssl-dev
+```
 
-- Install on Debian/Ubuntu: `sudo apt install ttyd`
-- Install the snap: `sudo snap install ttyd --classic`
-- Install on OpenWrt: `opkg install ttyd`
-- Install on Gentoo: clone the [repo](https://bitbucket.org/mgpagano/ttyd/src/master) and follow the directions [here](https://wiki.gentoo.org/wiki/Custom_repository#Creating_a_local_repository).
-- Install with [Homebrew](https://docs.brew.sh/Homebrew-on-Linux) : `brew install ttyd`
-- Precompiled static binaries: download from the [releases](https://github.com/tsl0922/ttyd/releases) page
+Clone and compile this repository, then install the executable and manual page:
 
-## Install on Windows
+```sh
+git clone https://github.com/pbtrung/ttyd.git
+cd ttyd
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+sudo cmake --install build
+```
 
-- Binary version (recommended): download from the [releases](https://github.com/tsl0922/ttyd/releases) page
-- Install with [WinGet](https://github.com/microsoft/winget-cli): `winget install tsl0922.ttyd`
-- Install with [Scoop](https://scoop.sh/#/apps?q=ttyd&s=2&d=1&o=true): `scoop install ttyd`
-- [Compile on Windows](https://github.com/tsl0922/ttyd/wiki/Compile-on-Windows)
+The generated frontend is checked in as `src/html.h`, so compiling the C server
+does not require Node.js, Bun or Zig.
+
+To rebuild the frontend, use Node.js 18+ and Yarn 3.6.3:
+
+```sh
+corepack enable
+corepack prepare yarn@3.6.3 --activate
+cd html
+yarn install
+yarn check
+yarn build
+cd ..
+cmake --build build --parallel
+sudo cmake --install build
+```
+
+To rebuild Ghostty's `.wasm` and `.js` from the pinned Git sources, install
+Zig 0.15.2 and Bun 1.3.2, then run `yarn build:ghostty` and `yarn install` in
+`html/` before `yarn build`. `yarn build:fonts` restores the bundled fonts from
+the verified JetBrains Mono release archive. See [frontend build details](html/README.md).
+
+Start an interactive session and open `http://localhost:7681`:
+
+```sh
+ttyd -W bash
+# Or:
+ttyd -W zsh
+```
 
 # Usage
 
@@ -89,9 +112,4 @@ Read the example usage on the [wiki](https://github.com/tsl0922/ttyd/wiki/Exampl
 
 ## Browser Support
 
-Modern browsers, See [Browser Support](https://github.com/xtermjs/xterm.js#browser-support).
-
-## Alternatives
-
-* [Wetty](https://github.com/krishnasrinivas/wetty): [Node](https://nodejs.org) based web terminal (SSH/login)
-* [GoTTY](https://github.com/yudai/gotty): [Go](https://golang.org) based web terminal
+Modern browsers with WebAssembly, Canvas, WebSocket, and Font Loading API support.

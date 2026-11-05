@@ -1,7 +1,7 @@
 // ported from hterm.Terminal.prototype.showOverlay
 // https://chromium.googlesource.com/apps/libapps/+/master/hterm/js/hterm_terminal.js
 import { bind } from 'decko';
-import { ITerminalAddon, Terminal } from '@xterm/xterm';
+import { ITerminalAddon, Terminal } from 'ghostty-web';
 
 export class OverlayAddon implements ITerminalAddon {
     private terminal: Terminal;
@@ -34,7 +34,10 @@ position: absolute;
         this.terminal = terminal;
     }
 
-    dispose(): void {}
+    dispose(): void {
+        if (this.overlayTimeout) clearTimeout(this.overlayTimeout);
+        this.overlayNode.remove();
+    }
 
     @bind
     showOverlay(msg: string, timeout?: number): void {

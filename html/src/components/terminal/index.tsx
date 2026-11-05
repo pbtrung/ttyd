@@ -1,11 +1,10 @@
 import { bind } from 'decko';
 import { Component, h } from 'preact';
-import { Xterm, XtermOptions } from './xterm';
+import { GhosttyTerminal, GhosttyOptions } from './ghostty';
 
-import '@xterm/xterm/css/xterm.css';
 import { Modal } from '../modal';
 
-interface Props extends XtermOptions {
+interface Props extends GhosttyOptions {
     id: string;
 }
 
@@ -15,26 +14,38 @@ interface State {
 
 export class Terminal extends Component<Props, State> {
     private container: HTMLElement;
-    private xterm: Xterm;
+    private terminal: GhosttyTerminal;
+    private mounted = false;
 
     constructor(props: Props) {
         super();
-        this.xterm = new Xterm(props, this.showModal);
+        this.terminal = new GhosttyTerminal(props, this.showModal);
     }
 
     async componentDidMount() {
-        await this.xterm.refreshToken();
-        this.xterm.open(this.container);
-        this.xterm.connect();
+        this.mounted = true;
+        try {
+            await this.terminal.refreshToken();
+            await this.terminal.open(this.container);
+            this.terminal.connect();
+        } catch (error) {
+            if (!this.mounted) return;
+            console.error('[ttyd] terminal initialization failed', error);
+            const message = document.createElement('p');
+            message.textContent = 'Unable to initialize terminal. Reload the page to retry.';
+            this.container.appendChild(message);
+        }
     }
 
     componentWillUnmount() {
-        this.xterm.dispose();
+        this.mounted = false;
+        this.terminal.destroy();
     }
 
     render({ id }: Props, { modal }: State) {
         return (
-            <div id={id} ref={c => (this.container = c as HTMLElement)}>
+            <div id={id}>
+                <div class="terminal" ref={c => (this.container = c as HTMLElement)} />
                 <Modal show={modal}>
                     <label class="file-label">
                         <input onChange={this.sendFile} class="file-input" type="file" multiple />
@@ -54,6 +65,6 @@ export class Terminal extends Component<Props, State> {
     sendFile(event: Event) {
         this.setState({ modal: false });
         const files = (event.target as HTMLInputElement).files;
-        if (files) this.xterm.sendFile(files);
+        if (files) this.terminal.sendFile(files);
     }
 }

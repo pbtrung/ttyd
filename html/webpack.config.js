@@ -1,4 +1,6 @@
 const path = require('path');
+const fs = require('fs');
+const { optimize } = require('webpack');
 const { merge } = require('webpack-merge');
 const ESLintPlugin = require('eslint-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -21,6 +23,10 @@ const baseConfig = {
     module: {
         rules: [
             {
+                test: /\.(wasm|woff2)$/,
+                type: 'asset/inline',
+            },
+            {
                 test: /\.tsx?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/,
@@ -33,8 +39,10 @@ const baseConfig = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
+        fallback: { 'fs/promises': false },
     },
     plugins: [
+        new optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
         new ESLintPlugin({
             context: path.resolve(__dirname, '.'),
             extensions: ['js', 'jsx', 'ts', 'tsx'],
@@ -53,6 +61,14 @@ const baseConfig = {
                 collapseWhitespace: true,
             },
             title: 'ttyd - Terminal',
+            licenses: [
+                'vendor/ghostty-web/LICENSE',
+                'vendor/ghostty-web/GHOSTTY-LICENSE',
+                'src/fonts/OFL.txt',
+                'src/components/terminal/ghostty/DRACULA-LICENSE',
+            ]
+                .map(file => fs.readFileSync(path.resolve(__dirname, file), 'utf8'))
+                .join('\n\n'),
             template: './template.html',
         }),
     ],
