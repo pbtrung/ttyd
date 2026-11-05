@@ -1,14 +1,58 @@
+diff --git a/lib/interfaces.ts b/lib/interfaces.ts
+index 4c6fbe4..2887770 100644
+--- a/lib/interfaces.ts
++++ b/lib/interfaces.ts
+@@ -12,6 +12,9 @@ export interface ITerminalOptions {
+   theme?: ITheme;
+   scrollback?: number; // Default: 10000
+   fontSize?: number; // Default: 15
++  fontWidth?: number; // Positive horizontal glyph scale (default: 1)
++  letterSpacing?: number; // Additional cell width in CSS pixels (default: 0)
++  lineHeight?: number; // Cell height multiplier, at least 1 (default: 1)
+   fontFamily?: string; // Default: 'monospace'
+   allowTransparency?: boolean;
+ 
 diff --git a/lib/renderer.ts b/lib/renderer.ts
-index 3b51bfd..a23e415 100644
+index 3b51bfd..7ce3db4 100644
 --- a/lib/renderer.ts
 +++ b/lib/renderer.ts
-@@ -197,16 +197,16 @@ export class CanvasRenderer {
+@@ -43,6 +43,9 @@ export interface IScrollbackProvider {
+ 
+ export interface RendererOptions {
+   fontSize?: number; // Default: 15
++  fontWidth?: number; // Positive horizontal scale, default: 1
++  letterSpacing?: number; // Default: 0 CSS pixels
++  lineHeight?: number; // Default: 1
+   fontFamily?: string; // Default: 'monospace'
+   cursorStyle?: 'block' | 'underline' | 'bar'; // Default: 'block'
+   cursorBlink?: boolean; // Default: false
+@@ -96,6 +99,9 @@ export class CanvasRenderer {
+   private ctx: CanvasRenderingContext2D;
+   private fontSize: number;
+   private fontFamily: string;
++  private fontWidth: number;
++  private letterSpacing: number;
++  private lineHeight: number;
+   private cursorStyle: 'block' | 'underline' | 'bar';
+   private cursorBlink: boolean;
+   private theme: Required<ITheme>;
+@@ -148,6 +154,9 @@ export class CanvasRenderer {
+ 
+     // Apply options
+     this.fontSize = options.fontSize ?? 15;
++    this.fontWidth = Number.isFinite(options.fontWidth) && options.fontWidth! > 0 ? options.fontWidth! : 1;
++    this.letterSpacing = Number.isFinite(options.letterSpacing) ? options.letterSpacing! : 0;
++    this.lineHeight = Number.isFinite(options.lineHeight) ? Math.max(1, options.lineHeight!) : 1;
+     this.fontFamily = options.fontFamily ?? 'monospace';
+     this.cursorStyle = options.cursorStyle ?? 'block';
+     this.cursorBlink = options.cursorBlink ?? false;
+@@ -197,16 +206,17 @@ export class CanvasRenderer {
  
      // Measure width using 'M' (typically widest character)
      const widthMetrics = ctx.measureText('M');
 -    const width = Math.ceil(widthMetrics.width);
 +    // Keep fractional advances so fixed-width cells match the native font metrics.
-+    const width = widthMetrics.width;
++    const width = Math.max(1, widthMetrics.width * this.fontWidth + this.letterSpacing);
  
      // Measure height using ascent + descent with padding for glyph overflow
      const ascent = widthMetrics.actualBoundingBoxAscent || this.fontSize * 0.8;
@@ -19,8 +63,101 @@ index 3b51bfd..a23e415 100644
 -    const height = Math.ceil(ascent + descent) + 2;
 -    const baseline = Math.ceil(ascent) + 1; // Offset baseline by half the padding
 +    // Preserve room for glyph overhang and add balanced leading between rows.
-+    const height = Math.ceil(ascent + descent) + 4;
-+    const baseline = Math.ceil(ascent) + 2; // Center glyphs in the added vertical leading
++    const naturalHeight = Math.ceil(ascent + descent) + 4;
++    const height = Math.ceil(naturalHeight * this.lineHeight);
++    const baseline = Math.ceil(ascent) + 2 + (height - naturalHeight) / 2;
  
      return { width, height, baseline };
    }
+@@ -647,7 +657,16 @@ export class CanvasRenderer {
+       // Simple cell - single codepoint
+       char = String.fromCodePoint(cell.codepoint || 32); // Default to space if null
+     }
+-    this.ctx.fillText(char, textX, textY);
++    if (this.fontWidth === 1) {
++      this.ctx.fillText(char, textX, textY);
++    } else {
++      // Scale glyphs and their advance together, preserving height and baseline.
++      this.ctx.save();
++      this.ctx.translate(textX, textY);
++      this.ctx.scale(this.fontWidth, 1);
++      this.ctx.fillText(char, 0, 0);
++      this.ctx.restore();
++    }
+ 
+     // Reset alpha
+     if (cell.flags & CellFlags.FAINT) {
+@@ -813,6 +832,21 @@ export class CanvasRenderer {
+   /**
+    * Update font size
+    */
++  public setFontWidth(scale: number): void {
++    this.fontWidth = Number.isFinite(scale) && scale > 0 ? scale : 1;
++    this.remeasureFont();
++  }
++
++  public setLetterSpacing(spacing: number): void {
++    this.letterSpacing = Number.isFinite(spacing) ? spacing : 0;
++    this.remeasureFont();
++  }
++
++  public setLineHeight(multiplier: number): void {
++    this.lineHeight = Number.isFinite(multiplier) ? Math.max(1, multiplier) : 1;
++    this.remeasureFont();
++  }
++
+   public setFontSize(size: number): void {
+     this.fontSize = size;
+     this.metrics = this.measureFont();
+diff --git a/lib/terminal.ts b/lib/terminal.ts
+index 92d5f3d..983694b 100644
+--- a/lib/terminal.ts
++++ b/lib/terminal.ts
+@@ -147,6 +147,9 @@ export class Terminal implements ITerminalCore {
+       theme: options.theme ?? {},
+       scrollback: options.scrollback ?? 10000,
+       fontSize: options.fontSize ?? 15,
++      fontWidth: options.fontWidth ?? 1,
++      letterSpacing: options.letterSpacing ?? 0,
++      lineHeight: options.lineHeight ?? 1,
+       fontFamily: options.fontFamily ?? 'monospace',
+       allowTransparency: options.allowTransparency ?? false,
+       convertEol: options.convertEol ?? false,
+@@ -207,6 +210,27 @@ export class Terminal implements ITerminalCore {
+         }
+         break;
+ 
++      case 'fontWidth':
++        if (this.renderer) {
++          this.renderer.setFontWidth(this.options.fontWidth);
++          this.handleFontChange();
++        }
++        break;
++
++      case 'letterSpacing':
++        if (this.renderer) {
++          this.renderer.setLetterSpacing(this.options.letterSpacing);
++          this.handleFontChange();
++        }
++        break;
++
++      case 'lineHeight':
++        if (this.renderer) {
++          this.renderer.setLineHeight(this.options.lineHeight);
++          this.handleFontChange();
++        }
++        break;
++
+       case 'fontSize':
+         if (this.renderer) {
+           this.renderer.setFontSize(this.options.fontSize);
+@@ -420,6 +444,9 @@ export class Terminal implements ITerminalCore {
+       // Create renderer
+       this.renderer = new CanvasRenderer(this.canvas, {
+         fontSize: this.options.fontSize,
++        fontWidth: this.options.fontWidth,
++        letterSpacing: this.options.letterSpacing,
++        lineHeight: this.options.lineHeight,
+         fontFamily: this.options.fontFamily,
+         cursorStyle: this.options.cursorStyle,
+         cursorBlink: this.options.cursorBlink,

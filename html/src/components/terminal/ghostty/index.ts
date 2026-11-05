@@ -338,7 +338,7 @@ export class GhosttyTerminal {
                     break;
                 case 'number':
                 case 'bigint':
-                    prefs[k] = Number.parseInt(queryVal, 10);
+                    prefs[k] = Number.parseFloat(queryVal);
                     break;
                 case 'string':
                     prefs[k] = queryVal;
@@ -520,7 +520,7 @@ export class GhosttyTerminal {
                     } else {
                         terminal.options[key] = value;
                     }
-                    if (key.indexOf('font') === 0) fitAddon.fit();
+                    if (key.indexOf('font') === 0 || key === 'letterSpacing' || key === 'lineHeight') fitAddon.fit();
                     break;
             }
         }

@@ -4865,8 +4865,8 @@ __metadata:
 
 "ghostty-web@file:vendor/ghostty-web::locator=ttyd%40workspace%3A.":
   version: 0.4.0-ttyd.640db461
-  resolution: "ghostty-web@file:vendor/ghostty-web#vendor/ghostty-web::hash=1ada2e&locator=ttyd%40workspace%3A."
-  checksum: 7bc488a6680b5a14304ee3f6c142165c2731a6002ab3ca8f22b6cd60893e809d69a11c7cfe55b2ed883d552e624128565718e5a97b0c834b1741a49362561a35
+  resolution: "ghostty-web@file:vendor/ghostty-web#vendor/ghostty-web::hash=f5934f&locator=ttyd%40workspace%3A."
+  checksum: 978aea7753020b3ebe9e817d7ee6fad23a0f2b65e4abddead887b4b2d38972f2bfcdb894acc9d9871fabecb1128866af943280e07e873fd19d3128dd3954cf05
   languageName: node
   linkType: hard
 

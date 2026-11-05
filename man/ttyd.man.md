@@ -128,7 +128,10 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 - `enableSixel`: Sixel images are unsupported by ghostty-web
 - `-t closeOnDisconnect=true`: close the terminal on disconnection, this will disable reconnect
 - `-t titleFixed=hello`: set a fixed title for the browser window
-- `-t fontSize=20`: change the font size of the terminal
+- `-t fontSize=20`: change the font size of the terminal (default: 12)
+- `-t fontWidth=0.9`: scale glyph width and advance horizontally (default: 1; positive values only)
+- `-t letterSpacing=-0.5`: adjust cell width in CSS pixels (default: -0.5)
+- `-t lineHeight=1.2`: set row height multiplier (default: 1.2; minimum: 1)
 - `unicodeVersion`: accepted for compatibility; Unicode handling is provided by Ghostty
 - `-t trzszDragInitTimeout=3000`: set the timeout in milliseconds for initializing drag and drop files to upload. (default: 3000) 
 

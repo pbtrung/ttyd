@@ -23,6 +23,9 @@ const clientOptions = {
 } as ClientOptions;
 const termOptions = {
     fontSize: 12,
+    fontWidth: 1,
+    letterSpacing: -0.5,
+    lineHeight: 1.2,
     fontFamily: '"JetBrains Mono", monospace',
     theme: dracula,
 } as ITerminalOptions;

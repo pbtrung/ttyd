@@ -7,8 +7,9 @@ Build tools: Zig 0.15.2, Bun 1.3.2.
 
 Run `yarn build:ghostty` from `html/` to rebuild the WASM, JavaScript and
 TypeScript declarations from Git. The upstream WASM API patch and ttyd font-metric patch are applied during
-the build. The ttyd patch preserves fractional glyph advances and adds 2px of
-balanced vertical leading to improve matching with native terminal grids. No prebuilt npm terminal artifacts are used.
+the build. The ttyd patch preserves fractional glyph advances and supports
+`fontWidth` (horizontal glyph scale), `letterSpacing` (extra cell width in CSS pixels) and `lineHeight` (row height
+multiplier). Row leading is centered around the glyph baseline. No prebuilt npm terminal artifacts are used.
 
 The upstream Vite library build embeds the compiled WASM in `ghostty-web.js`.
 `ghostty-vt.wasm` is also retained as a standalone build artifact. The tiny

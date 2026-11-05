@@ -1,1 +1,3 @@
 src/html.h linguist-generated
+html/patches/*.patch -whitespace
+html/vendor/ghostty-web/index.d.ts whitespace=cr-at-eol

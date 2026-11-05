@@ -3,6 +3,9 @@ export declare class CanvasRenderer {
     private ctx;
     private fontSize;
     private fontFamily;
+    private fontWidth;
+    private letterSpacing;
+    private lineHeight;
     private cursorStyle;
     private cursorBlink;
     private theme;
@@ -71,6 +74,9 @@ export declare class CanvasRenderer {
     /**
      * Update font size
      */
+    setFontWidth(scale: number): void;
+    setLetterSpacing(spacing: number): void;
+    setLineHeight(multiplier: number): void;
     setFontSize(size: number): void;
     /**
      * Update font family
@@ -1010,6 +1016,9 @@ export declare interface ITerminalOptions {
     theme?: ITheme;
     scrollback?: number;
     fontSize?: number;
+    fontWidth?: number;
+    letterSpacing?: number;
+    lineHeight?: number;
     fontFamily?: string;
     allowTransparency?: boolean;
     convertEol?: boolean;
@@ -1409,6 +1418,9 @@ export declare class OSC8LinkProvider implements ILinkProvider {
 
 export declare interface RendererOptions {
     fontSize?: number;
+    fontWidth?: number;
+    letterSpacing?: number;
+    lineHeight?: number;
     fontFamily?: string;
     cursorStyle?: 'block' | 'underline' | 'bar';
     cursorBlink?: boolean;

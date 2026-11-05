@@ -74,6 +74,26 @@ ttyd -W bash
 ttyd -W zsh
 ```
 
+
+The browser defaults to 12px JetBrains Mono with `letterSpacing=-0.5` and
+`lineHeight=1.2`. Tune column spacing and row spacing independently:
+
+```sh
+ttyd -W -t fontSize=12 -t letterSpacing=-0.5 -t lineHeight=1.2 bash
+```
+
+`fontWidth` scales the glyphs horizontally: `1` is their natural shape, `0.9`
+is 10% narrower, and `1.1` is 10% wider. It preserves character height and adjusts
+cell width to keep selection and cursor alignment correct. For example:
+
+```sh
+ttyd -W -t fontSize=12 -t fontWidth=0.9 -t letterSpacing=0 -t lineHeight=1.2 bash
+```
+
+A more negative `letterSpacing` tightens columns; a larger `lineHeight` adds
+space between rows. These options also work in the browser URL, for example
+`?fontWidth=0.9&letterSpacing=0&lineHeight=1.2`.
+
 # Usage
 
 ## Command-line Options
