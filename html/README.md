@@ -66,3 +66,25 @@ space between rows. These options also work in the browser URL, for example
 
 Run `yarn check` and `yarn build`. This generates `dist/inline.html` and embeds
 the compressed page in `../src/html.h`. Rebuild the C executable afterwards.
+
+## Renderer regression checks
+
+After `yarn build` and rebuilding the C executable, run:
+
+```sh
+yarn test:renderer
+# Include V8 CPU sampling for the typing workload:
+yarn test:renderer --profile
+```
+
+The tests launch local ttyd and Chromium, compare incremental rendering with a
+full repaint, and report main-thread busy time and canvas work during typing
+and idle. They cover fractional font metrics and display scales (1, 1.25, 2),
+selection, cursor blinking, ANSI/Unicode output, paste, scrollback, resizing,
+and frozen/resumed tab lifecycle. Unchanged rows must not repaint while idle;
+each paint must decode at most one viewport.
+
+Set `CHROMIUM_PATH` to your Chromium executable and `TTYD_BINARY` to your built
+ttyd if they differ from `/usr/bin/chromium` and `../build/ttyd`.
+
+See [renderer profiling results and regression coverage](RENDERER_PERFORMANCE.md).

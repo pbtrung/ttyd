@@ -16,6 +16,12 @@ export declare class CanvasRenderer {
     private cursorBlinkInterval?;
     private lastCursorPosition;
     private lastViewportY;
+    private lastScrollbackLength;
+    private lastScrollbarOpacity;
+    private lastSelectionKey;
+    private frameViewport?;
+    private lastCursorVisible;
+    private lastCursorStyle;
     private currentBuffer;
     private selectionManager?;
     private currentSelectionCoords;
@@ -49,6 +55,7 @@ export declare class CanvasRenderer {
      * and text in a single pass (cell by cell), the background of cell N would
      * cover any left-extending portions of graphemes from cell N-1.
      */
+    private getRenderLine;
     private renderLine;
     /**
      * Render a cell's background only (Pass 1 of two-pass rendering)
@@ -914,6 +921,7 @@ export declare class InputHandler {
 }
 
 export declare interface IRenderable {
+    getViewport?(): GhosttyCell[];
     getLine(y: number): GhosttyCell[] | null;
     getCursor(): {
         x: number;

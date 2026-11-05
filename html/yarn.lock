@@ -4865,8 +4865,8 @@ __metadata:
 
 "ghostty-web@file:vendor/ghostty-web::locator=ttyd%40workspace%3A.":
   version: 0.4.0-ttyd.640db461
-  resolution: "ghostty-web@file:vendor/ghostty-web#vendor/ghostty-web::hash=f5934f&locator=ttyd%40workspace%3A."
-  checksum: 978aea7753020b3ebe9e817d7ee6fad23a0f2b65e4abddead887b4b2d38972f2bfcdb894acc9d9871fabecb1128866af943280e07e873fd19d3128dd3954cf05
+  resolution: "ghostty-web@file:vendor/ghostty-web#vendor/ghostty-web::hash=63766e&locator=ttyd%40workspace%3A."
+  checksum: a7db8318779de51021348238d77241e0873edf70db5e2da716cba66e8a1283625586ad213d96a72c13242dcc3e000f92e24cb0ea85517eefce2ec01c7b64603a
   languageName: node
   linkType: hard
 
@@ -7995,6 +7995,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"playwright-core@npm:1.64.1":
+  version: 1.64.1
+  resolution: "playwright-core@npm:1.64.1"
+  bin:
+    playwright-core: cli.js
+  checksum: 614007bcdeaad5c6ff46465b623a81e0dbcae060f04022ba37e325d10c2eb618a9b70c44da2eb7b0857c80f83fca6db73c53f0600dcdf1d922c7942af1e0b701
+  languageName: node
+  linkType: hard
+
 "plugin-error@npm:^0.1.2":
   version: 0.1.2
   resolution: "plugin-error@npm:0.1.2"
@@ -10438,6 +10447,7 @@ __metadata:
     gulp-rename: ^2.0.0
     html-webpack-plugin: ^5.6.0
     mini-css-extract-plugin: ^2.8.1
+    playwright-core: 1.64.1
     preact: ^10.19.6
     sass: ^1.71.1
     sass-loader: ^14.1.1

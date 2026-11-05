@@ -9,7 +9,11 @@ Run `yarn build:ghostty` from `html/` to rebuild the WASM, JavaScript and
 TypeScript declarations from Git. The upstream WASM API patch and ttyd font-metric patch are applied during
 the build. The ttyd patch preserves fractional glyph advances and supports
 `fontWidth` (horizontal glyph scale), `letterSpacing` (extra cell width in CSS pixels) and `lineHeight` (row height
-multiplier). Row leading is centered around the glyph baseline. No prebuilt npm terminal artifacts are used.
+multiplier). Row leading is centered around the glyph baseline. A second patch rounds canvas
+backing dimensions consistently, preventing fractional font metrics or display
+scaling from resetting and repainting the entire canvas every frame. It also
+shares one viewport decode per paint and redraws the cursor only when its
+position, blink state, or underlying content changes. No prebuilt npm terminal artifacts are used.
 
 The upstream Vite library build embeds the compiled WASM in `ghostty-web.js`.
 `ghostty-vt.wasm` is also retained as a standalone build artifact. The tiny

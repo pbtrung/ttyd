@@ -26,3 +26,24 @@ jobs:
           yarn run check
           yarn run build
         working-directory: html
+      - name: Build ttyd for browser regression checks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libuv1-dev libwebsockets-dev libwebsockets-evlib-uv libjson-c-dev libssl-dev zlib1g-dev
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Install Chromium for renderer checks
+        run: node node_modules/playwright-core/cli.js install --with-deps chromium
+        working-directory: html
+      - name: Check renderer correctness and performance
+        run: |
+          export CHROMIUM_PATH="$(node -p "require('playwright-core').chromium.executablePath()")"
+          yarn test:renderer --profile | tee renderer-profile.log
+        working-directory: html
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renderer-checks
+          path: |
+            html/renderer-profile.log
+            /tmp/ttyd-renderer-tests/

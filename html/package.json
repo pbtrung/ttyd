@@ -17,7 +17,8 @@
     "check": "gts check",
     "fix": "gts fix",
     "build:ghostty": "bash scripts/build-ghostty.sh",
-    "build:fonts": "bash scripts/build-fonts.sh"
+    "build:fonts": "bash scripts/build-fonts.sh",
+    "test:renderer": "node tests/renderer.cjs"
   },
   "engines": {
     "node": ">=18"
@@ -39,6 +40,7 @@
     "gulp-rename": "^2.0.0",
     "html-webpack-plugin": "^5.6.0",
     "mini-css-extract-plugin": "^2.8.1",
+    "playwright-core": "1.64.1",
     "sass": "^1.71.1",
     "sass-loader": "^14.1.1",
     "scssfmt": "^1.0.7",
