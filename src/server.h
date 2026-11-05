@@ -4,6 +4,8 @@
 
 #include "pty.h"
 
+#define MAX_WS_MESSAGE_SIZE (16U * 1024U * 1024U)
+
 // client message
 #define INPUT '0'
 #define RESIZE_TERMINAL '1'
@@ -18,21 +20,21 @@
 
 // url paths
 struct endpoints {
-  char *ws;
-  char *index;
-  char *token;
-  char *parent;
+  char* ws;
+  char* index;
+  char* token;
+  char* parent;
 };
 
 extern volatile bool force_exit;
-extern struct lws_context *context;
-extern struct server *server;
+extern struct lws_context* context;
+extern struct server* server;
 extern struct endpoints endpoints;
 
 struct pss_http {
   char path[128];
-  char *buffer;
-  char *ptr;
+  char* buffer;
+  char* ptr;
   size_t len;
 };
 
@@ -40,37 +42,39 @@ struct pss_tty {
   bool initialized;
   int initial_cmd_index;
   bool authenticated;
+  bool flow_paused;
   char user[30];
   char address[50];
   char path[128];
-  char **args;
+  char** args;
   int argc;
 
-  struct lws *wsi;
-  char *buffer;
+  struct lws* wsi;
+  char* buffer;
   size_t len;
+  size_t capacity;
 
-  pty_process *process;
-  pty_buf_t *pty_buf;
+  pty_process* process;
+  pty_buf_t* pty_buf;
 
   int lws_close_status;
 };
 
 typedef struct {
-  struct pss_tty *pss;
+  struct pss_tty* pss;
   bool ws_closed;
 } pty_ctx_t;
 
 struct server {
   int client_count;        // client count
-  char *prefs_json;        // client preferences
-  char *credential;        // encoded basic auth credential
-  char *auth_header;       // header name used for auth proxy
-  char *index;             // custom index.html
-  char *command;           // full command line
-  char **argv;             // command with arguments
+  char* prefs_json;        // client preferences
+  char* credential;        // encoded basic auth credential
+  char* auth_header;       // header name used for auth proxy
+  char* index;             // custom index.html
+  char* command;           // full command line
+  char** argv;             // command with arguments
   int argc;                // command + arguments count
-  char *cwd;               // working directory
+  char* cwd;               // working directory
   int sig_code;            // close signal
   char sig_name[20];       // human readable signal string
   bool url_arg;            // allow client to send cli arguments in URL
@@ -82,5 +86,5 @@ struct server {
   char socket_path[255];   // UNIX domain socket path
   char terminal_type[30];  // terminal type to report
 
-  uv_loop_t *loop;         // the libuv event loop
+  uv_loop_t* loop;  // the libuv event loop
 };

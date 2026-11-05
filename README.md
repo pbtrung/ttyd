@@ -94,6 +94,8 @@ A more negative `letterSpacing` tightens columns; a larger `lineHeight` adds
 space between rows. These options also work in the browser URL, for example
 `?fontWidth=0.9&letterSpacing=0&lineHeight=1.2`.
 
+Backend regression and sanitizer commands are documented in [tests/README.md](tests/README.md).
+
 # Usage
 
 ## Command-line Options

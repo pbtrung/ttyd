@@ -7,15 +7,31 @@ on:
     - "CMakeLists.txt"
     - "src/*"
     - "scripts/*"
+    - "tests/**"
   pull_request:
     paths:
     - ".github/workflows/backend.yml"
     - "CMakeLists.txt"
     - "src/*"
     - "scripts/*"
+    - "tests/**"
   workflow_call:
 
 jobs:
+  linux-sanitizers:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libuv1-dev libwebsockets-dev libwebsockets-evlib-uv libjson-c-dev libssl-dev zlib1g-dev
+      - name: Build with address and undefined-behavior sanitizers
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build --parallel 2
+      - name: Run C and protocol regressions
+        run: ctest --test-dir build --output-on-failure
   msvc:
     runs-on: windows-latest
     env:
@@ -44,6 +60,7 @@ jobs:
           $env:VCPKG_ROOT = "${{ env.VCPKG_ROOT }}"
           cmake -S . -B build -G "Visual Studio 18 2026" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ env.TOOLCHAIN_FILE }}" -DVCPKG_TARGET_TRIPLET=${{ env.VCPKG_TRIPLET }}
           cmake --build build --config Release
+          ctest --test-dir build -C Release --output-on-failure
       - uses: actions/upload-artifact@v7
         with:
           name: ttyd.msvc

@@ -52,3 +52,7 @@ build
 
 # Project files
 !init.d
+
+# Python test artifacts
+__pycache__/
+*.pyc

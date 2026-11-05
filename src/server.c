@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <json.h>
 #include <libwebsockets.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -11,20 +12,21 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "utils.h"
 #include "compat.h"
+#include "utils.h"
 
 #ifndef TTYD_VERSION
 #define TTYD_VERSION "unknown"
 #endif
 
 volatile bool force_exit = false;
-struct lws_context *context;
-struct server *server;
+struct lws_context* context;
+struct server* server;
 struct endpoints endpoints = {"/ws", "/", "/token", ""};
+static bool endpoints_allocated = false;
 
-extern int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
-extern int callback_tty(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
+extern int callback_http(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len);
+extern int callback_tty(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len);
 
 // websocket protocols
 static const struct lws_protocols protocols[] = {{"http-only", callback_http, sizeof(struct pss_http), 0},
@@ -85,7 +87,7 @@ static const struct option options[] = {{"port", required_argument, NULL, 'p'},
                                         {"version", no_argument, NULL, 'v'},
                                         {"help", no_argument, NULL, 'h'},
                                         {NULL, 0, 0, 0}};
-static const char *opt_string = "p:i:U:c:H:u:g:s:w:I:b:P:f:6aSC:K:A:Wt:T:Om:oqBd:vh";
+static const char* opt_string = "p:i:U:c:H:u:g:s:w:I:b:P:f:6aSC:K:A:Wt:T:Om:oqBd:vh";
 
 static void print_help() {
   // clang-format off
@@ -161,8 +163,8 @@ static void print_config() {
   if (!server->writable) lwsl_warn("The --writable option is not set, will start in readonly mode\n");
 }
 
-static struct server *server_new(int argc, char **argv, int start) {
-  struct server *ts;
+static struct server* server_new(int argc, char** argv, int start) {
+  struct server* ts;
   size_t cmd_len = 0;
 
   ts = xmalloc(sizeof(struct server));
@@ -175,8 +177,8 @@ static struct server *server_new(int argc, char **argv, int start) {
   if (start == argc) return ts;
 
   int cmd_argc = argc - start;
-  char **cmd_argv = &argv[start];
-  ts->argv = xmalloc(sizeof(char *) * (cmd_argc + 1));
+  char** cmd_argv = &argv[start];
+  ts->argv = xmalloc(sizeof(char*) * (cmd_argc + 1));
   for (int i = 0; i < cmd_argc; i++) {
     ts->argv[i] = strdup(cmd_argv[i]);
     cmd_len += strlen(ts->argv[i]);
@@ -188,10 +190,10 @@ static struct server *server_new(int argc, char **argv, int start) {
   ts->argc = cmd_argc;
 
   ts->command = xmalloc(cmd_len + 1);
-  char *ptr = ts->command;
+  char* ptr = ts->command;
   for (int i = 0; i < cmd_argc; i++) {
     size_t len = strlen(ts->argv[i]);
-    ptr = (char *)memcpy(ptr, ts->argv[i], len + 1) + len;
+    ptr = (char*)memcpy(ptr, ts->argv[i], len + 1) + len;
     if (i != cmd_argc - 1) {
       *ptr++ = ' ';
     }
@@ -204,7 +206,7 @@ static struct server *server_new(int argc, char **argv, int start) {
   return ts;
 }
 
-static void server_free(struct server *ts) {
+static void server_free(struct server* ts) {
   if (ts == NULL) return;
   if (ts->credential != NULL) free(ts->credential);
   if (ts->auth_header != NULL) free(ts->auth_header);
@@ -213,7 +215,7 @@ static void server_free(struct server *ts) {
   free(ts->command);
   free(ts->prefs_json);
 
-  char **p = ts->argv;
+  char** p = ts->argv;
   for (; *p; p++) free(*p);
   free(ts->argv);
 
@@ -228,9 +230,16 @@ static void server_free(struct server *ts) {
 
   free(ts->loop);
   free(ts);
+  if (endpoints_allocated) {
+    free(endpoints.ws);
+    free(endpoints.index);
+    free(endpoints.token);
+    free(endpoints.parent);
+    endpoints_allocated = false;
+  }
 }
 
-static void signal_cb(uv_signal_t *watcher, int signum) {
+static void signal_cb(uv_signal_t* watcher, int signum) {
   char sig_name[20];
 
   switch (watcher->signum) {
@@ -253,35 +262,32 @@ static void signal_cb(uv_signal_t *watcher, int signum) {
   lwsl_notice("send ^C to force exit.\n");
 }
 
-static int parse_int(char *name, char *str) {
-  char *endptr;
+static int parse_int(char* name, char* str) {
+  char* endptr;
   errno = 0;
   long val = strtol(str, &endptr, 0);
-  if (errno != 0 || endptr == str) {
+  if (errno != 0 || endptr == str || *endptr != '\0' || val < INT_MIN || val > INT_MAX) {
     fprintf(stderr, "ttyd: invalid value for %s: %s\n", name, str);
     exit(EXIT_FAILURE);
   }
   return (int)val;
 }
 
-static int calc_command_start(int argc, char **argv) {
+static int calc_command_start(int argc, char** argv) {
   // make a copy of argc and argv
   int argc_copy = argc;
-  char **argv_copy = xmalloc(sizeof(char *) * argc);
-  for (int i = 0; i < argc; i++) {
-    argv_copy[i] = strdup(argv[i]);
-  }
+  char** argv_copy = xmalloc(sizeof(char*) * (argc + 1));
+  memcpy(argv_copy, argv, sizeof(char*) * (argc + 1));
 
   // do not print error message for invalid option
   opterr = 0;
-  while (getopt_long(argc_copy, argv_copy, opt_string, options, NULL) != -1)
-    ;
+  while (getopt_long(argc_copy, argv_copy, opt_string, options, NULL) != -1);
 
   int start = argc;
   if (optind < argc) {
-    char *command = argv_copy[optind];
+    char* command = argv_copy[optind];
     for (int i = 0; i < argc; i++) {
-      if (strcmp(argv[i], command) == 0) {
+      if (argv[i] == command) {
         start = i;
         break;
       }
@@ -289,9 +295,6 @@ static int calc_command_start(int argc, char **argv) {
   }
 
   // free argv copy
-  for (int i = 0; i < argc; i++) {
-    free(argv_copy[i]);
-  }
   free(argv_copy);
 
   // reset for next use
@@ -301,7 +304,7 @@ static int calc_command_start(int argc, char **argv) {
   return start;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (argc == 1) {
     print_help();
     return 0;
@@ -339,7 +342,7 @@ int main(int argc, char **argv) {
   char key_path[1024] = "";
   char ca_path[1024] = "";
 
-  struct json_object *client_prefs = json_object_new_object();
+  struct json_object* client_prefs = json_object_new_object();
 
 #ifdef _WIN32
   json_object_object_add(client_prefs, "isWindows", json_object_new_boolean(true));
@@ -381,7 +384,7 @@ int main(int argc, char **argv) {
         break;
       case 'p':
         info.port = parse_int("port", optarg);
-        if (info.port < 0) {
+        if (info.port < 0 || info.port > 65535) {
           fprintf(stderr, "ttyd: invalid port: %s\n", optarg);
           return -1;
         }
@@ -400,7 +403,15 @@ int main(int argc, char **argv) {
           return -1;
         }
         char b64_text[256];
-        lws_b64_encode_string(optarg, strlen(optarg), b64_text, sizeof(b64_text));
+        size_t credential_len = strlen(optarg);
+        int encoded = credential_len <= INT_MAX
+                          ? lws_b64_encode_string(optarg, (int)credential_len, b64_text, sizeof(b64_text))
+                          : -1;
+        if (encoded <= 0 || encoded >= (int)sizeof(b64_text)) {
+          fprintf(stderr, "ttyd: credential is too long\n");
+          return -1;
+        }
+        free(server->credential);
         server->credential = strdup(b64_text);
         break;
       case 'H':
@@ -427,7 +438,7 @@ int main(int argc, char **argv) {
         break;
       case 'I':
         if (!strncmp(optarg, "~/", 2)) {
-          const char *home = getenv("HOME");
+          const char* home = getenv("HOME");
           size_t index_len = strlen(home) + strlen(optarg);
           server->index = malloc(index_len);
           snprintf(server->index, index_len, "%s%s", home, optarg + 1);
@@ -445,16 +456,22 @@ int main(int argc, char **argv) {
         }
         break;
       case 'b': {
-        char path[128];
-        strncpy(path, optarg, 128);
-        size_t len = strlen(path);
-        while (len && path[len - 1] == '/') path[--len] = 0;  // trim trailing /
-        if (!len) break;
-#define sc(f)                                  \
-  strncpy(path + len, endpoints.f, 128 - len); \
-  endpoints.f = strdup(path);
-        sc(ws) sc(index) sc(token) sc(parent)
-#undef sc
+        size_t len = strlen(optarg);
+        while (len && optarg[len - 1] == '/') len--;
+        if (len && (optarg[0] != '/' || len + strlen("/token") >= sizeof(((struct pss_http*)0)->path))) {
+          fprintf(stderr, "ttyd: base path must start with / and fit all endpoint paths\n");
+          return -1;
+        }
+        const char* suffixes[] = {"/ws", "/", "/token", ""};
+        char** paths[] = {&endpoints.ws, &endpoints.index, &endpoints.token, &endpoints.parent};
+        for (int i = 0; i < 4; i++) {
+          size_t size = len + strlen(suffixes[i]) + 1;
+          char* path = xmalloc(size);
+          snprintf(path, size, "%.*s%s", (int)len, optarg, suffixes[i]);
+          if (endpoints_allocated) free(*paths[i]);
+          *paths[i] = path;
+        }
+        endpoints_allocated = true;
       } break;
 #if LWS_LIBRARY_VERSION_NUMBER >= 4000000
       case 'P': {
@@ -504,18 +521,18 @@ int main(int argc, char **argv) {
       case 't':
         optind--;
         for (; optind < start && *argv[optind] != '-'; optind++) {
-          char *option = optarg;
-          char *key = strsep(&option, "=");
+          char* option = optarg;
+          char* key = strsep(&option, "=");
           if (key == NULL) {
             fprintf(stderr, "ttyd: invalid client option: %s, format: key=value\n", optarg);
             return -1;
           }
-          char *value = strsep(&option, "=");
+          char* value = strsep(&option, "=");
           if (value == NULL) {
             fprintf(stderr, "ttyd: invalid client option: %s, format: key=value\n", optarg);
             return -1;
           }
-          struct json_object *obj = json_tokener_parse(value);
+          struct json_object* obj = json_tokener_parse(value);
           json_object_object_add(client_prefs, key, obj != NULL ? obj : json_object_new_string(value));
         }
         break;
@@ -550,7 +567,7 @@ int main(int argc, char **argv) {
 #if defined(LWS_USE_UNIX_SOCK) || defined(LWS_WITH_UNIX_SOCK)
       info.options |= LWS_SERVER_OPTION_UNIX_SOCK;
       info.port = 0;  // warmcat/libwebsockets#1985
-      strncpy(server->socket_path, info.iface, sizeof(server->socket_path) - 1);
+      snprintf(server->socket_path, sizeof(server->socket_path), "%s", info.iface);
       if (strlen(socket_owner) > 0) {
         info.unix_socket_perms = socket_owner;
       }
@@ -587,7 +604,7 @@ int main(int argc, char **argv) {
     lowercase(server->auth_header);
   }
 
-  void *foreign_loops[1];
+  void* foreign_loops[1];
   foreign_loops[0] = server->loop;
   info.foreign_loops = foreign_loops;
   info.options |= LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
@@ -598,7 +615,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  struct lws_vhost *vhost = lws_create_vhost(context, &info);
+  struct lws_vhost* vhost = lws_create_vhost(context, &info);
   if (vhost == NULL) {
     lwsl_err("libwebsockets vhost creation failed\n");
     return 1;
