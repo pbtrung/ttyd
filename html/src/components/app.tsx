@@ -22,7 +22,7 @@ const clientOptions = {
     unicodeVersion: '11',
 } as ClientOptions;
 const termOptions = {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: '"JetBrains Mono", monospace',
     theme: dracula,
 } as ITerminalOptions;

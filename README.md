@@ -18,14 +18,20 @@ emulator compiled to WebAssembly, with JetBrains Mono and Dracula colors.
 
 ## Compile on Linux
 
-Install a C compiler, CMake, Git and development libraries for libuv, libwebsockets,
-JSON-C, zlib and OpenSSL. libwebsockets must include libuv event loop support.
-On Debian/Ubuntu:
+Install CMake, Git, a C compiler and development libraries. libwebsockets must
+include support for the libuv event loop.
+
+On Arch Linux:
 
 ```sh
-sudo apt update
-sudo apt install build-essential cmake git libuv1-dev libwebsockets-dev \
-  libwebsockets-evlib-uv libjson-c-dev zlib1g-dev libssl-dev
+sudo pacman -S --needed base-devel cmake git libuv libwebsockets json-c zlib openssl
+```
+
+On Alpine Linux:
+
+```sh
+sudo apk add build-base cmake git libuv-dev libwebsockets-dev \
+  libwebsockets-evlib_uv json-c-dev zlib-dev openssl-dev
 ```
 
 Clone and compile this repository, then install the executable and manual page:
